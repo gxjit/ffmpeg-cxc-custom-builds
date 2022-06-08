@@ -29,7 +29,8 @@ jobs:
           submodules: 'true'
       - name: Build
         run: |
-          python ${{ github.workspace }}/build.py ${{ matrix.vers }}
+          cd ${{ github.workspace }}
+          python build.py ${{ matrix.vers }}
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -39,4 +40,3 @@ jobs:
             ${{ env.dist_dir }}/*.zip
           if-no-files-found: error
           # retention-days: 60
-
