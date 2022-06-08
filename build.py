@@ -4,7 +4,7 @@ from functools import partial
 from os import environ
 from pathlib import Path
 from shutil import copytree
-from subprocess import run
+from subprocess import run, CalledProcessError
 from sys import exit
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
@@ -86,7 +86,7 @@ usrEnv["HINTS_FILE"] = str(hintsFile)
 
 runP(f"chmod +rx {cmdPath}")
 
-runP = partial(runP, capture_output=True, universal_newlines=True)
+runP = partial(runP, capture_output=True, text=True)
 
 cmdOut = runP(f"bash {cmdPath}", env=usrEnv)
 # bash {cmdPath} 2>&1 | tee {buildLog}
@@ -101,18 +101,25 @@ else:
     print(cmdOut.stderr)
     exit(1)
 
-if pargs.tests:
+if pargs.tests:  # Tests
     testOut = []
 
     for f in built:
-        testOut.append(runP(["file", str(f)]))
-        testOut.append(runP(["ldd", str(f)]))
+        try:
+            testOut.append(runP(["file", str(f)]))
+            testOut.append(runP(["ldd", str(f)]))
 
-        if pargs.mingw64:
-            # runP("sudo apt-get -y install wine")  # move this up
-            testOut.append(runP(f'wine "{str(f)}" -map -version'))
-        else:
-            testOut.append(runP([str(f), "-version"]))
+            if pargs.mingw64:
+                # runP("sudo apt-get -y install wine")  # move this up
+                testOut.append(runP(f'wine "{str(f)}" -map -version'))
+            else:
+                testOut.append(runP([str(f), "-version"]))
+
+        except CalledProcessError as e:
+            print(e)
+            print(e.cmd)
+            print(e.stderr)
+            print(e.stdout)
 
     # checkErrs = "".join(o.stderr for o in testOut).strip()
     checkErrs = sum([o.returncode for o in testOut])
