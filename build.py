@@ -15,7 +15,7 @@ def parseArgs():
     buildSelect = parser.add_mutually_exclusive_group(required=True)
     buildSelect.add_argument("-l", "--linux64", action="store_true")
     buildSelect.add_argument("-w", "--mingw64", action="store_true")
-    parser.add_argument("-t", "--tests", action="store_true")
+    parser.add_argument("-t", "--tests", action="store_false")
     # parser.add_argument("-uh", "--home", action="store_true")
 
     return parser.parse_args()
