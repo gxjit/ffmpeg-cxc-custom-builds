@@ -78,7 +78,7 @@ runP(f"sudo apt-get -y install {deps}")
 if not rootPath.exists():
     rootPath.mkdir()
 
-copytree(Path.cwd(), rootPath)
+copytree(Path.cwd(), rootPath, dirs_exist_ok=True)
 
 usrEnv = environ.copy()
 usrEnv["ROOT_PATH"] = str(rootPath)
