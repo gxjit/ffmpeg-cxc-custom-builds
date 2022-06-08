@@ -44,9 +44,6 @@ td = TemporaryDirectory(ignore_cleanup_errors=False)
 buildRoot = Path.cwd()  # if not pargs.home else Path.home()
 rootPath = Path(td.name)  # buildRoot.joinpath(buildName)
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
-# hintsFile = rootPath.joinpath(repoName).joinpath(
-#     f"ffmpeg-{buildType}-build-hints-custom"
-# )
 buildLog = rootPath / f"{buildName}.log"
 distDir = (
     Path(environ.get("dist_dir"))  # type: ignore
@@ -95,7 +92,10 @@ built = list(rootPath.rglob("bin/ff*"))
 
 # if not pargs.mingw64:
 #     for f in built:
-#         runP([str(f), '-version'])
+#         runP(["file", str(f)])
+#         runP(["ldd", str(f)])
+#         runP([str(f), "-version"])
+# readelf
 
 if not distDir.exists():
     distDir.mkdir()
@@ -111,6 +111,3 @@ td.cleanup()
 # import stat
 # chmod(cmdPath, stat.S_IRUSR)
 # chmod(cmdPath, stat.S_IXUSR)
-# shlex.split()
-# chdir(rootPath)
-# runP(f"git clone --depth 1 {repoUrl}")
