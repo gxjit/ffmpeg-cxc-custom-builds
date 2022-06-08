@@ -15,7 +15,7 @@ def parseArgs():
     buildSelect = parser.add_mutually_exclusive_group(required=True)
     buildSelect.add_argument("-l", "--linux64", action="store_true")
     buildSelect.add_argument("-w", "--mingw64", action="store_true")
-    parser.add_argument("-uh", "--home", action="store_true")
+    # parser.add_argument("-uh", "--home", action="store_true")
 
     return parser.parse_args()
 
@@ -23,8 +23,8 @@ def parseArgs():
 pargs = parseArgs()
 
 # repoName = "ffmpeg-cxc-custom-build"
-# subModule = "ffmpeg-cxc-build"
 # repoUrl = f"https://github.com/gxjit/{repoName}.git"
+subModule = "ffmpeg-cxc-build"
 
 
 fDate = lambda: datetime.now().strftime("%d-%m-%y")
@@ -41,20 +41,21 @@ else:
 buildName = f"ffmpeg-{buildTarget}-build"
 
 td = TemporaryDirectory(ignore_cleanup_errors=False)
-buildRoot = Path.cwd() if not pargs.home else Path.home()
+buildRoot = Path.cwd()  # if not pargs.home else Path.home()
 rootPath = Path(td.name)  # buildRoot.joinpath(buildName)
-hintsFile = rootPath.joinpath(repoName).joinpath(
-    f"ffmpeg-{buildType}-build-hints-custom"
-)
-buildLog = rootPath.joinpath(f"{buildName}.log")
+hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
+# hintsFile = rootPath.joinpath(repoName).joinpath(
+#     f"ffmpeg-{buildType}-build-hints-custom"
+# )
+buildLog = rootPath / f"{buildName}.log"
 distDir = (
     Path(environ.get("dist_dir"))  # type: ignore
     if environ.get("dist_dir")
-    else rootPath.joinpath("dist")
+    else rootPath / "dist"
 )
-assetsZip = distDir.joinpath(f"{buildName}-{fDate()}.zip")
+assetsZip = distDir / f"{buildName}-{fDate()}.zip"
 
-cmdPath = f"{rootPath}/{repoName}/ffmpeg-{buildType}-{buildTarget}"
+cmdPath = f"{rootPath}/{subModule}/ffmpeg-{buildType}-{buildTarget}"
 
 if not pargs.mingw64:
     cmdPath = cmdPath.replace(f"-{buildTarget}", "")
