@@ -15,6 +15,7 @@ def parseArgs():
     buildSelect = parser.add_mutually_exclusive_group(required=True)
     buildSelect.add_argument("-l", "--linux64", action="store_true")
     buildSelect.add_argument("-w", "--mingw64", action="store_true")
+    parser.add_argument("-t", "--tests", action="store_true")
     # parser.add_argument("-uh", "--home", action="store_true")
 
     return parser.parse_args()
@@ -25,7 +26,6 @@ pargs = parseArgs()
 # repoName = "ffmpeg-cxc-custom-build"
 # repoUrl = f"https://github.com/gxjit/{repoName}.git"
 subModule = "ffmpeg-cxc-build"
-
 
 fDate = lambda: datetime.now().strftime("%d-%m-%y")
 
@@ -68,6 +68,8 @@ deps = (
 
 if pargs.mingw64:
     deps = f"{deps} g++-mingw-w64 gcc-mingw-w64"
+    if pargs.tests:
+        deps = f"{deps} wine"
 
 runP = partial(run, shell=True, check=True)
 
@@ -91,7 +93,7 @@ cmdOut = runP(f"bash {cmdPath}", env=usrEnv)
 
 built = list(rootPath.rglob("bin/ff*"))
 
-if len(built):
+if len(built) == 3:
     buildLog.write_text(cmdOut.stdout)
     print(cmdOut.stdout)
 else:
@@ -99,30 +101,30 @@ else:
     print(cmdOut.stderr)
     exit(1)
 
+if pargs.tests:
+    testOut = []
 
-testOut = []
+    for f in built:
+        testOut.append(runP(["file", str(f)]))
+        testOut.append(runP(["ldd", str(f)]))
 
-for f in built:
-    testOut.append(runP(["file", str(f)]))
-    testOut.append(runP(["ldd", str(f)]))
+        if pargs.mingw64:
+            # runP("sudo apt-get -y install wine")  # move this up
+            testOut.append(runP(f'wine "{str(f)}" -map -version'))
+        else:
+            testOut.append(runP([str(f), "-version"]))
 
-    if pargs.mingw64:
-        runP("sudo apt-get -y install wine")  # move this up
-        testOut.append(runP(f'wine "{str(f)}" -map -version'))
-    else:
-        testOut.append(runP([str(f), "-version"]))
+    # checkErrs = "".join(o.stderr for o in testOut).strip()
+    checkErrs = sum([o.returncode for o in testOut])
 
-# checkErrs = "".join(o.stderr for o in testOut).strip()
-checkErrs = sum([o.returncode for o in testOut])
+    if checkErrs:
+        print("Tests Failed -> \n" + "\n\n".join(o.stderr for o in testOut))
+        exit(1)
 
-if checkErrs:
-    print("Tests Failed -> \n" + "".join(o.stderr for o in testOut))
-    exit(1)
+    testOut = "\n\n".join(o.stdout for o in testOut)
 
-testOut = "\n\n".join(o.stdout for o in testOut)
-
-testLog.write_text(testOut)
-print(testOut)
+    testLog.write_text(testOut)
+    print(testOut)
 
 # readelf
 
@@ -133,7 +135,8 @@ with ZipFile(assetsZip, "w") as zipit:
     for f in built:
         zipit.write(f, f.name)
     zipit.write(buildLog, buildLog.name)
-    zipit.write(testLog, testLog.name)
+    if pargs.tests:
+        zipit.write(testLog, testLog.name)
 
 td.cleanup()
 
