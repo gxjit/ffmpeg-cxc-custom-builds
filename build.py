@@ -112,10 +112,11 @@ for f in built:
     else:
         testOut.append(runP([str(f), "-version"]))
 
-checkErrs = "".join(o.stderr for o in testOut).strip()
+# checkErrs = "".join(o.stderr for o in testOut).strip()
+checkErrs = sum([o.returncode for o in testOut])
 
 if checkErrs:
-    print("Tests Failed -> \n" + checkErrs)
+    print("Tests Failed -> \n" + "".join(o.stderr for o in testOut))
     exit(1)
 
 testOut = "\n\n".join(o.stdout for o in testOut)
