@@ -42,7 +42,7 @@ buildName = f"ffmpeg-{buildTarget}-build"
 
 td = TemporaryDirectory(ignore_cleanup_errors=False)
 buildRoot = Path.cwd()  # if not pargs.home else Path.home()
-rootPath = Path(td.name)  # buildRoot.joinpath(buildName)
+rootPath = Path(td.name)  # buildRoot / buildName
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
 buildLog = rootPath / f"{buildName}.log"
 distDir = (
@@ -83,12 +83,17 @@ usrEnv["HINTS_FILE"] = str(hintsFile)
 
 runP(f"chmod +rx {cmdPath}")
 
-runP(
-    f"bash {cmdPath} 2>&1 | tee {buildLog}",
-    env=usrEnv,
-)
+cmdOut = runP(f"bash {cmdPath}", env=usrEnv, capture=True)
+# bash {cmdPath} 2>&1 | tee {buildLog}
 
 built = list(rootPath.rglob("bin/ff*"))
+
+if len(built):
+    buildLog.write_text(cmdOut.stderr)
+    print(cmdOut.stderr)
+    exit(1)
+else:
+    buildLog.write_text(cmdOut.stdout)
 
 # if not pargs.mingw64:
 #     for f in built:
@@ -96,6 +101,7 @@ built = list(rootPath.rglob("bin/ff*"))
 #         runP(["ldd", str(f)])
 #         runP([str(f), "-version"])
 # readelf
+# testlog
 
 if not distDir.exists():
     distDir.mkdir()
