@@ -93,6 +93,7 @@ built = list(rootPath.rglob("bin/ff*"))
 
 if len(built):
     buildLog.write_text(cmdOut.stdout)
+    print(cmdOut.stdout)
 else:
     buildLog.write_text(cmdOut.stderr)
     print(cmdOut.stderr)
@@ -106,7 +107,7 @@ for f in built:
     testOut.append(runP(["ldd", str(f)]))
 
     if pargs.mingw64:
-        runP("sudo apt-get -y install wine")
+        runP("sudo apt-get -y install wine")  # move this up
         testOut.append(runP(f'wine "{str(f)}" -map -version'))
     else:
         testOut.append(runP([str(f), "-version"]))
@@ -120,6 +121,7 @@ if checkErrs:
 testOut = "\n\n".join(o.stdout for o in testOut)
 
 testLog.write_text(testOut)
+print(testOut)
 
 # readelf
 
