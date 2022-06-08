@@ -44,7 +44,8 @@ td = TemporaryDirectory(ignore_cleanup_errors=False)
 buildRoot = Path.cwd()  # if not pargs.home else Path.home()
 rootPath = Path(td.name)  # buildRoot / buildName
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
-buildLog = rootPath / f"{buildName}.log"
+buildLog = rootPath / f"{buildName}-build.log"
+testLog = rootPath / f"{buildName}-test.log"
 distDir = (
     Path(environ.get("dist_dir"))  # type: ignore
     if environ.get("dist_dir")
@@ -83,25 +84,44 @@ usrEnv["HINTS_FILE"] = str(hintsFile)
 
 runP(f"chmod +rx {cmdPath}")
 
-cmdOut = runP(f"bash {cmdPath}", env=usrEnv, capture=True)
+runP = partial(runP, capture_output=True, universal_newlines=True)
+
+cmdOut = runP(f"bash {cmdPath}", env=usrEnv)
 # bash {cmdPath} 2>&1 | tee {buildLog}
 
 built = list(rootPath.rglob("bin/ff*"))
 
 if len(built):
+    buildLog.write_text(cmdOut.stdout)
+else:
     buildLog.write_text(cmdOut.stderr)
     print(cmdOut.stderr)
     exit(1)
-else:
-    buildLog.write_text(cmdOut.stdout)
 
-# if not pargs.mingw64:
-#     for f in built:
-#         runP(["file", str(f)])
-#         runP(["ldd", str(f)])
-#         runP([str(f), "-version"])
+
+testOut = []
+
+for f in built:
+    testOut.append(runP(["file", str(f)]))
+    testOut.append(runP(["ldd", str(f)]))
+
+    if pargs.mingw64:
+        runP("sudo apt-get -y install wine")
+        testOut.append(runP(f'wine "{str(f)}" -map -version'))
+    else:
+        testOut.append(runP([str(f), "-version"]))
+
+checkErrs = "".join(o.stderr for o in testOut).strip()
+
+if checkErrs:
+    print("Tests Failed -> \n" + checkErrs)
+    exit(1)
+
+testOut = "\n\n".join(o.stdout for o in testOut)
+
+testLog.write_text(testOut)
+
 # readelf
-# testlog
 
 if not distDir.exists():
     distDir.mkdir()
@@ -110,6 +130,7 @@ with ZipFile(assetsZip, "w") as zipit:
     for f in built:
         zipit.write(f, f.name)
     zipit.write(buildLog, buildLog.name)
+    zipit.write(testLog, testLog.name)
 
 td.cleanup()
 
