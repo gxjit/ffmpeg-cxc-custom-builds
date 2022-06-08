@@ -1,0 +1,3 @@
+[submodule "ffmpeg-cxc-build"]
+	path = ffmpeg-cxc-build
+	url = https://github.com/ctrlesc/ffmpeg-cxc-build
