@@ -4,7 +4,7 @@ from functools import partial
 from os import environ
 from pathlib import Path
 from shutil import copytree
-from subprocess import run, CalledProcessError
+from subprocess import run
 from sys import exit
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
@@ -15,7 +15,6 @@ def parseArgs():
     buildSelect = parser.add_mutually_exclusive_group(required=True)
     buildSelect.add_argument("-l", "--linux64", action="store_true")
     buildSelect.add_argument("-w", "--mingw64", action="store_true")
-    parser.add_argument("-t", "--tests", action="store_false")
     # parser.add_argument("-uh", "--home", action="store_true")
 
     return parser.parse_args()
@@ -45,7 +44,6 @@ buildRoot = Path.cwd()  # if not pargs.home else Path.home()
 rootPath = Path(td.name)  # buildRoot / buildName
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
 buildLog = rootPath / f"{buildName}-build.log"
-testLog = rootPath / f"{buildName}-test.log"
 distDir = (
     Path(environ.get("dist_dir"))  # type: ignore
     if environ.get("dist_dir")
@@ -68,10 +66,8 @@ deps = (
 
 if pargs.mingw64:
     deps = f"{deps} g++-mingw-w64 gcc-mingw-w64"
-    if pargs.tests:
-        deps = f"{deps} wine"
 
-runP = partial(run, shell=True, check=True)
+runP = partial(run, check=True)  # remove shell?
 
 runP(f"sudo apt-get -y install {deps}")
 
@@ -101,39 +97,6 @@ else:
     print(cmdOut.stderr)
     exit(1)
 
-if pargs.tests:  # Tests
-    testOut = []
-
-    for f in built:
-        try:
-            testOut.append(runP(["file", str(f)]))
-            testOut.append(runP(["ldd", str(f)]))
-
-            if pargs.mingw64:
-                # runP("sudo apt-get -y install wine")  # move this up
-                testOut.append(runP(f'wine "{str(f)}" -map -version'))
-            else:
-                testOut.append(runP([str(f), "-version"]))
-
-        except CalledProcessError as e:
-            print(e)
-            print(e.cmd)
-            print(e.stderr)
-            print(e.stdout)
-
-    # checkErrs = "".join(o.stderr for o in testOut).strip()
-    checkErrs = sum([o.returncode for o in testOut])
-
-    if checkErrs:
-        print("Tests Failed -> \n" + "\n\n".join(o.stderr for o in testOut))
-        exit(1)
-
-    testOut = "\n\n".join(o.stdout for o in testOut)
-
-    testLog.write_text(testOut)
-    print(testOut)
-
-# readelf
 
 if not distDir.exists():
     distDir.mkdir()
@@ -142,8 +105,6 @@ with ZipFile(assetsZip, "w") as zipit:
     for f in built:
         zipit.write(f, f.name)
     zipit.write(buildLog, buildLog.name)
-    if pargs.tests:
-        zipit.write(testLog, testLog.name)
 
 td.cleanup()
 
