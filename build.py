@@ -67,7 +67,7 @@ deps = (
 if pargs.mingw64:
     deps = f"{deps} g++-mingw-w64 gcc-mingw-w64"
 
-runP = partial(run, check=True)  # remove shell?
+runP = partial(run, shell=True, check=True)  # remove shell?
 
 runP(f"sudo apt-get -y install {deps}")
 
