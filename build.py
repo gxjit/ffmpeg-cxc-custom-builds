@@ -43,7 +43,7 @@ td = TemporaryDirectory(ignore_cleanup_errors=True)
 buildRoot = Path.cwd()  # if not pargs.home else Path.home()
 rootPath = Path(td.name)  # buildRoot / buildName
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
-buildLog = rootPath / f"{buildName}-build.log"
+buildLog = rootPath / f"{buildName}.log"
 distDir = (
     Path(environ.get("dist_dir"))  # type: ignore
     if environ.get("dist_dir")
