@@ -39,7 +39,7 @@ else:
 
 buildName = f"ffmpeg-{buildTarget}-build"
 
-td = TemporaryDirectory(ignore_cleanup_errors=False)
+td = TemporaryDirectory(ignore_cleanup_errors=True)
 buildRoot = Path.cwd()  # if not pargs.home else Path.home()
 rootPath = Path(td.name)  # buildRoot / buildName
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
