@@ -40,14 +40,14 @@ else:
 buildName = f"ffmpeg-{buildTarget}-build"
 
 td = TemporaryDirectory(ignore_cleanup_errors=True)
-buildRoot = Path.cwd()  # if not pargs.home else Path.home()
-rootPath = Path(td.name)  # buildRoot / buildName
+distRoot = Path.cwd()  # if not pargs.home else Path.home()
+rootPath = Path(td.name)  # distRoot / buildName
 hintsFile = rootPath / f"ffmpeg-{buildType}-build-hints-custom"
 buildLog = rootPath / f"{buildName}.log"
 distDir = (
     Path(environ.get("dist_dir"))  # type: ignore
     if environ.get("dist_dir")
-    else rootPath / "dist"
+    else distRoot / "dist"
 )
 assetsZip = distDir / f"{buildName}-{fDate()}.zip"
 
@@ -76,7 +76,7 @@ if not rootPath.exists():
 
 copytree(Path.cwd(), rootPath, dirs_exist_ok=True)
 
-usrEnv = environ.copy()
+usrEnv = environ.copy() # or mutate environ
 usrEnv["ROOT_PATH"] = str(rootPath)
 usrEnv["HINTS_FILE"] = str(hintsFile)
 
